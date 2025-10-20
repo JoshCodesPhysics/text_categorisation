@@ -1,2 +1,24 @@
 # text_categorisation
 Building a model to categorise text snippets
+
+# Dataset
+
+- Used huggingface dair emotion dataset with text snippets labeled with the associated emotion.
+- Plotted label distribution to check imbalance, and used `class_weight = "balanced"` in the logistic regression model, which weights data from a certain class inversely proportional to the count of that class (n_samples / (n_classes * np.bincount(specific_class))) to ensure training is fair across categories.
+- Double checked row text length between dataset splits to ensure mean and median text lengths are roughly similar (I think context windows matter for this kind of thing, especially without using a RoPE)
+
+# Tfid Vectorizer
+- Word count per row and word frequency across whole dataset converted to vector, combined with vocabulary index vector
+- Using english dataset so remove english "stop" (common, non-emotional) words
+- Convert everything to lowercase for consistency
+- Embed one and two-grams (word chunks). Two grams might be good for adjectivised emotions, like 'bitter despair'.
+- Remove words that appear very frequently (and, an, the - irrelevant to emotional context) or very infrequently (typos for example).
+- Logarithmically scale weighting of frequently-appearing words that have not been removed so that they do not dominate.
+- Number of features and frequency cutoffs are geared towards the smaller dataset that we are working with here
+
+# Logistic Regression Model
+- Using the Limited-memory Broyden–Fletcher–Goldfarb–Shanno algorithm to minimise the model loss (approximate the Hessian with a few gradient evaluations) - good for small datasets and is the default solver for sklearn LR
+- Multinomial - a multidimensional surface -> polynomial for each class combined to produce logit values that can be softmaxed into probability-like values (sum to one) for each class. Can use top-k choice or just greedy choice of highest value. The parameters of each polynomial are optimised for the most accurate predictions 
+- L2 regularisation for overfitting prevention (sum of squares term that keep most weights small and heavily penalises particularly large weights - generalisation)
+- C parameter = 0.5 -> Low level of trust in training dataset. Data row - feature ratio is quite low, need more data if we want more trust. Use aggressive regularisation to prevent overfitting to small dataset.
+- Use sufficient training iterations for loss convergence, and use all CPU cores for speed
