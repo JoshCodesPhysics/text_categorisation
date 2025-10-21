@@ -35,3 +35,12 @@ Building a model to categorise text snippets
 - Pre trained BERT model performed poorly without finetuning - ~39% accuracy. Perhaps larger or more specialised model would do better.
 - Fine-tuned SetFit model -> Comparitive accuracy to TFID and logistic regression approach: 89%
 - May improve with model complexity and increasing number of finetuning steps
+
+# Given more time
+- Optimise model, increase datasets and evaluate on final test set
+- Compare models with uncertainties on their performance metrics in mind (statistical significance)
+- Use a random baseline classifier model and combine all into an AUC plot
+- Look at precision/recall scores
+- Start building out pipeline architecture (containerisation, model persistence)
+- Visualise model coefficients with SHAP
+- Plot each model metrics in bar chart
