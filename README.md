@@ -9,6 +9,7 @@ Building a model to categorise text snippets
 
 # Tfid Vectorizer
 - Word count per row and word frequency across whole dataset converted to vector, combined with vocabulary index vector
+- Training, validation and test datasets come pre-stratified and equally balanced from hugging face
 - Using english dataset so remove english "stop" (common, non-emotional) words
 - Convert everything to lowercase for consistency
 - Embed one and two-grams (word chunks). Two grams might be good for adjectivised emotions, like 'bitter despair'.
@@ -22,3 +23,6 @@ Building a model to categorise text snippets
 - L2 regularisation for overfitting prevention (sum of squares term that keep most weights small and heavily penalises particularly large weights - generalisation)
 - C parameter = 0.5 -> Low level of trust in training dataset. Data row - feature ratio is quite low, need more data if we want more trust. Use aggressive regularisation to prevent overfitting to small dataset.
 - Use sufficient training iterations for loss convergence, and use all CPU cores for speed
+
+## Trained and validated, calculated F1 macro score and accuracy overall and per class, and plotted confusion matrix. 
+- Good scores for Joy, Sadness and Anger. Some confusion of joy <-> love, fear <-> surprise, sadness <-> fear. More subtle differences

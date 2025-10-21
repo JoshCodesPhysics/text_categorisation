@@ -2,14 +2,13 @@ from datasets import load_dataset
 # from setfit import get_templated_dataset
 # import pandas as pd
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.feature_extraction.text import TfidfVectorizer
-from scipy.sparse import hstack
 from matplotlib import pyplot as plt
 import seaborn as sns
 import numpy as np
 import os
 from wordcloud import WordCloud, STOPWORDS
+from sklearn.metrics import f1_score, accuracy_score, confusion_matrix, classification_report
 
 
 def plot_classes(dataset, classes, plotname, filename):
@@ -24,6 +23,7 @@ def plot_classes(dataset, classes, plotname, filename):
 
     plt.tight_layout()
     plt.savefig(filename)
+    plt.close()
 
 def plot_text_count_histogram(dataset, plotname, filename):
     
@@ -44,6 +44,7 @@ def plot_text_count_histogram(dataset, plotname, filename):
     
     plt.tight_layout()
     plt.savefig(filename)
+    plt.close()
 
 # From: https://www.kaggle.com/aashita/word-clouds-of-various-shapes
 def plot_wordcloud(text, mask=None, max_words=200, max_font_size=100, figure_size=(24.0,16.0), 
@@ -72,10 +73,30 @@ def plot_wordcloud(text, mask=None, max_words=200, max_font_size=100, figure_siz
     plt.tight_layout()
     os.makedirs("wordcloud_plot", exist_ok=True)
     plt.savefig("wordcloud_plot/wordcloud.png")
+    plt.close()
+
+def get_conf_matrix_and_class_report(val_dataset, validation_predictions, classes):
+    # Create confusion matrix
+    cm = confusion_matrix(val_dataset["label"], validation_predictions)
+
+    # Plot confusion matrix
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                xticklabels=classes, yticklabels=classes)
+    plt.title('Confusion Matrix - Emotion Classification')
+    plt.xlabel('Predicted Emotion')
+    plt.ylabel('Actual Emotion')
+    plt.tight_layout()
+    os.makedirs("confusion_matrix", exist_ok=True)
+    plt.savefig("confusion_matrix/confusion_matrix.png", dpi=300, bbox_inches='tight')
+    plt.close()
+
+    # Print classification report
+    print("Classification Report:")
+    print(classification_report(val_dataset["label"], validation_predictions, target_names=classes))
     
 
 if __name__ == "__main__":
-    # Load all splits of the dataset
     train_dataset = load_dataset("dair-ai/emotion", "split", split="train")
     val_dataset = load_dataset("dair-ai/emotion", "split", split="validation") 
     test_dataset = load_dataset("dair-ai/emotion", "split", split="test")
@@ -89,7 +110,6 @@ if __name__ == "__main__":
     plot_classes(val_dataset, classes, "Validation", "class_plots/validation_countplot.png")
     plot_classes(test_dataset, classes, "Test", "class_plots/test_countplot.png")
     
-    # Plot text count histograms
     os.makedirs("text_length_plots", exist_ok=True)
     plot_text_count_histogram(train_dataset, "Training", "text_length_plots/training_text_count_histogram.png")
     plot_text_count_histogram(val_dataset, "Validation", "text_length_plots/validation_text_count_histogram.png")
@@ -106,4 +126,14 @@ if __name__ == "__main__":
 
     print(f"{vectorised_train_dataset.shape=}, {vectorised_validate_dataset.shape=}, {vectorised_test_dataset.shape=}")
 
-    model = LogisticRegression(class_weight='balanced', solver='lbfgs', multi_class="multinomial", penalty = "l2", C = 0.5, max_iter = 2000, random_state = 42, n_jobs=4)
+    model = LogisticRegression(class_weight='balanced', solver='lbfgs', penalty = "l2", C = 0.5, max_iter = 2000, random_state = 42, n_jobs=4)
+
+    # Embedded training dataset, and target labels to predict
+    model.fit(vectorised_train_dataset, train_dataset["label"])
+
+    validation_predictions = model.predict(vectorised_validate_dataset)
+    f1 = f1_score(validation_predictions, val_dataset["label"], average = "macro")
+    accuracy = accuracy_score(validation_predictions, val_dataset["label"])
+
+    print(f"{f1=}, {accuracy=}")
+    get_conf_matrix_and_class_report(val_dataset, validation_predictions, classes)
